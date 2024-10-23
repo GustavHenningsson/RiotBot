@@ -1,7 +1,7 @@
 # RiotBot
 Mickes based discordbot för clash
 ### Libraries ###
-Discord.py (version 1.7.3) & Python requests
+Discord.py & Python requests
 
 ```python
 pip install requests
@@ -11,6 +11,6 @@ pip install discord.py==1.7.3
 ```
 
 ### Running ###
-Lägg in api-nyckeln som global variabel i ```bot.py```
+Skapa en .env fil i riotbot-directory. Lägg in guild token, bot token, och API-key som GUILD, BOT_TOKEN, och RIOT_API_KEY respektive
 För att köra botten, starta ```bot.py```. 
 
