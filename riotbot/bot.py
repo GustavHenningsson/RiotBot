@@ -7,6 +7,7 @@ import ast
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import enum
 
 
 
@@ -35,7 +36,7 @@ id = 704740604340338759
 #id = 704704351268110346
 listofppl =[]
 datestringdict = {}
-apikey= ''
+apikey= os.environ['RIOT_API_KEY']
 
 #read file
 f = open("savedhashmap.txt", "r")
@@ -62,6 +63,13 @@ else:
     datestringdict = ast.literal_eval(readfile)
 
 f.close()
+
+
+def get_clash():
+    url= 'https://euw1.api.riotgames.com/lol/clash/v1/tournaments?api_key='+apikey
+    response = requests.get(url)
+    return response.json
+
 
 def get_encryptedid(name, server):
     url= 'https://'+server+'.api.riotgames.com/lol/summoner/v4/summoners/by-name/'+name+'?api_key='+apikey
@@ -138,13 +146,60 @@ def inttostring(int):
         return "fill"
     
 
+class Response(str, enum.Enum):
+    Yes = 3
+    No = 0
+    Maybe = 1
+    Fill = 2
 
+
+def build_view_message():
+    resultstring1 ="Gamers available on Saturday: \n"
+    resultstring2 = "\nGamers available on Sunday: \n"
+    listnumberhashmapsaturday = {}
+    listnumberhashmapsunday = {}
+
+    saturdaynumberstring = "Saturday: "
+    sundaynumberstring = "Sunday: "
+    #adds to string in a nice order
+    for j in range(3, -1, -1):
+        listnumberhashmapsaturday[j] = 0
+        listnumberhashmapsunday[j] = 0
+        for i in clashhashmap:
+            if clashhashmap[i][0] == j:
+                if i in roleshashmap:
+                    resultstring1 = resultstring1 + (i + ":     " + inttostring(clashhashmap[i][0]) + '      ' + str(roleshashmap[i][0])+ '\n')
+                else:
+                    resultstring1 = resultstring1 + (i + ":     " + inttostring(clashhashmap[i][0]) + '      No roles specified yet.' +'\n')
+                listnumberhashmapsaturday[j] +=1
+            if clashhashmap[i][1]==j:
+                if i in roleshashmap:
+                    resultstring2 = resultstring2 + (i + ":     " + inttostring(clashhashmap[i][1]) + '      ' + str(roleshashmap[i][0]) + '\n')
+                else:
+                    resultstring2 = resultstring2 + (i + ":     " + inttostring(clashhashmap[i][1]) + '      No roles specified yet.' +'\n')
+                listnumberhashmapsunday[j] +=1
+    #send out the message
+    return ("Clash for " + datestringdict['datestring'] + ".\n" + "\n" + resultstring1 + saturdaynumberstring +  str(listnumberhashmapsaturday[3]) + " + ("+ str(listnumberhashmapsaturday[2]) + ")\n"+ resultstring2 + sundaynumberstring +  str(listnumberhashmapsunday[3]) + " + ("+ str(listnumberhashmapsunday[2]) + ")")
 
 
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
+
+@client.tree.command(description="Register for the upcoming Clash tournament")
+async def register(inter: discord.Interaction, saturday: Response, sunday: Response):
+    clashhashmap[inter.user.name] = (int(saturday.value), int(sunday.value))
+    f = open("savedhashmap.txt", "w")
+    f.write(str(clashhashmap))
+    f.close()
+    await inter.response.send_message(f"{inter.user.mention} was succesfully registered!")
+    #await interaction.followup.send(f"{interaction.user.mention} ")
+
+
+@client.tree.command(description="View registered players")
+async def view(inter: discord.Interaction):
+    await inter.response.send_message(build_view_message())
 
 
 async def register(message):
