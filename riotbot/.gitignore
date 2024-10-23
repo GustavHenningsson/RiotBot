@@ -4,5 +4,7 @@ compose-dev.yaml
 .vscode
 discordClash
 .dockerignore
+savedhashmap.txt
+savedrolehashmap.txt
 [d]ocker*
 *.env
