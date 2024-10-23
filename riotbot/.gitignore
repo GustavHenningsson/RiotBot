@@ -5,3 +5,4 @@ compose-dev.yaml
 discordClash
 .dockerignore
 [d]ocker*
+*.env

@@ -1,11 +1,36 @@
 import discord
+from discord import app_commands
 import requests
 import operator
 import time
 import ast
+import os
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
-client = discord.Client()
+
+
+
+
+load_dotenv()
+MY_GUILD = discord.Object(os.environ['GUILD'])
+
+class MyClient(discord.Client):
+    def __init__(self, *, intents: discord.Intents):
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
+        self.current_voice_channel = None
+
+    async def setup_hook(self):
+        # This copies the global commands over to your guild.
+        self.tree.copy_global_to(guild=MY_GUILD)
+        await self.tree.sync(guild=MY_GUILD)
+
+intents = discord.Intents.default()
+client = MyClient(intents=intents)
+
+
+#client = discord.Client()
 id = 704740604340338759
 #id = 704704351268110346
 listofppl =[]
@@ -111,6 +136,10 @@ def inttostring(int):
         return "maybe"
     if int == 2:
         return "fill"
+    
+
+
+
 
 @client.event
 async def on_ready():
@@ -361,4 +390,4 @@ async def on_message(message):
 
 
 
-client.run('')
+client.run(os.environ['BOT_TOKEN'])
