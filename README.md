@@ -18,3 +18,6 @@ pip install python-dotenv
 Skapa en .env fil i riotbot-directory. Lägg in guild token, bot token, och API-key som GUILD, BOT_TOKEN, och RIOT_API_KEY respektive
 För att köra botten, starta ```bot.py```. 
 
+För att köra docker.
+docker build -t clash -f Containerfile.clash .
+docker run --rm --name clash clash
