@@ -1,9 +1,7 @@
 import discord
 from discord import app_commands
-import ast
 import os
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 from helpers import *
 
 load_dotenv()
@@ -25,48 +23,24 @@ client = MyClient(intents=intents)
 
 apikey= os.environ['RIOT_API_KEY']
 
-f = open("savedhashmap.txt", "r")
-readfile = f.read()
-if readfile == "":
-    clashhashmap = {}
-else:
-    clashhashmap = ast.literal_eval(readfile)
-f.close()
-
-f = open("savedrolehashmap.txt", "r")
-readfile = f.read()
-if readfile == "":
-    roleshashmap = {}
-else:
-    roleshashmap = ast.literal_eval(readfile)
-f.close()
-
-f = open("datestringdict.txt", "r")
-readfile = f.read()
-if readfile == "":
-    datestringdict = {'datestring': "DATE NOT SET"}
-else:
-    datestringdict = ast.literal_eval(readfile)
-f.close()
-
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
 @client.tree.command(description="Register for the upcoming Clash tournament")
 async def register(inter: discord.Interaction, saturday: Response, sunday: Response):
-    await inter.response.send_message(register_gamer(clashhashmap, inter.user.display_name, saturday, sunday))
+    await inter.response.send_message(register_gamer(inter.user.display_name, saturday, sunday))
 
 @client.tree.command(description="View registered players")
 async def view(inter: discord.Interaction):
-    await inter.response.send_message(build_view_message(clashhashmap, roleshashmap, datestringdict))
+    await inter.response.send_message(build_view_message())
 
 @client.tree.command(description="Register your roles")
 async def role(inter: discord.Interaction, mid: YesOrNo, top: YesOrNo, jungle: YesOrNo, adc: YesOrNo, support: YesOrNo, fill: YesOrNo):
-    await inter.response.send_message(set_roles(roleshashmap, inter.user.display_name, mid, top, jungle, adc, support, fill))
+    await inter.response.send_message(set_roles(inter.user.display_name, mid, top, jungle, adc, support, fill))
 
 @client.tree.command(description="Clears the clash list")
 async def clearclash(inter: discord.Interaction):
-    await inter.response.send_message(clear_clash(datestringdict, clashhashmap, inter))
+    await inter.response.send_message(clear_clash(inter))
 
 client.run(os.environ['BOT_TOKEN'])

@@ -2,6 +2,32 @@ from datetime import datetime, timedelta
 import requests
 import enum
 import discord
+import ast
+
+
+f = open("savedhashmap.txt", "r")
+readfile = f.read()
+if readfile == "":
+    clashhashmap = {}
+else:
+    clashhashmap = ast.literal_eval(readfile)
+f.close()
+
+f = open("savedrolehashmap.txt", "r")
+readfile = f.read()
+if readfile == "":
+    roleshashmap = {}
+else:
+    roleshashmap = ast.literal_eval(readfile)
+f.close()
+
+f = open("datestringdict.txt", "r")
+readfile = f.read()
+if readfile == "":
+    datestringdict = {'datestring': "DATE NOT SET"}
+else:
+    datestringdict = ast.literal_eval(readfile)
+f.close()
 
 def get_clash(apikey):
     url= 'https://euw1.api.riotgames.com/lol/clash/v1/tournaments?api_key='+apikey
@@ -14,7 +40,7 @@ class Response(enum.Enum):
     Maybe = 1
     Fill = 2
 
-def build_view_message(clashhashmap, roleshashmap, datestringdict):
+def build_view_message():
     resultstring1 ="Gamers available on Saturday: \n"
     resultstring2 = "\nGamers available on Sunday: \n"
 
@@ -57,7 +83,7 @@ def build_view_message(clashhashmap, roleshashmap, datestringdict):
     
     return ("Clash for " + datestringdict['datestring'] + ".\n" + "\n" + resultstring1 + saturdaynumberstring + resultstring2 + sundaynumberstring)
 
-def register_gamer(clashhashmap, name, saturday, sunday):
+def register_gamer(name, saturday, sunday):
     clashhashmap[name] = (Response(saturday).value, Response(sunday).value)
     f = open("savedhashmap.txt", "w")
     f.write(str(clashhashmap))
@@ -68,7 +94,7 @@ class YesOrNo(str, enum.Enum):
     Yes = 0
     No = 1
 
-def set_roles(roleshashmap, name, top, jungle, mid, adc, support, fill):
+def set_roles(name, top, jungle, mid, adc, support, fill):
     roles = []
     if top == YesOrNo.Yes:
         roles.append("top")
@@ -97,7 +123,7 @@ def is_clash_mod(roles):
             return True
     return False
 
-async def setdate(datestringdict, message):
+async def setdate(message):
     if str(message.author.name) == 'åke' or str(message.author.name) == 'tvåke' or str(message.author.name) == 'Oliver':
         t = message.content
         x = t.split()
@@ -112,7 +138,7 @@ async def setdate(datestringdict, message):
         f.close()
         await message.channel.send("Successfully set the date.")
 
-async def removec(roleshashmap, clashhashmap, message):
+async def removec(message):
     if str(message.author.name) == 'åke' or str(message.author.name) == 'tvåke':
         t = message.content
         x = t.split()
@@ -148,8 +174,7 @@ async def removec(roleshashmap, clashhashmap, message):
     else:
         await message.channel.send("you dont have the authorities for this command bitch")
 
-def clear_clash(datestringdict, clashhashmap, inter: discord.Interaction):
-
+def clear_clash(inter: discord.Interaction):
     if not is_clash_mod(inter.user.roles):
         return "you dont have the authorities for this command bitch"
     
