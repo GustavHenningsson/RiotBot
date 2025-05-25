@@ -146,7 +146,7 @@ def inttostring(int):
         return "fill"
     
 
-class Response(str, enum.Enum):
+class Response(enum.Enum):
     Yes = 3
     No = 0
     Maybe = 1
@@ -156,50 +156,125 @@ class Response(str, enum.Enum):
 def build_view_message():
     resultstring1 ="Gamers available on Saturday: \n"
     resultstring2 = "\nGamers available on Sunday: \n"
-    listnumberhashmapsaturday = {}
-    listnumberhashmapsunday = {}
 
-    saturdaynumberstring = "Saturday: "
-    sundaynumberstring = "Sunday: "
-    #adds to string in a nice order
-    for j in range(3, -1, -1):
-        listnumberhashmapsaturday[j] = 0
-        listnumberhashmapsunday[j] = 0
-        for i in clashhashmap:
-            if clashhashmap[i][0] == j:
-                if i in roleshashmap:
-                    resultstring1 = resultstring1 + (i + ":     " + inttostring(clashhashmap[i][0]) + '      ' + str(roleshashmap[i][0])+ '\n')
-                else:
-                    resultstring1 = resultstring1 + (i + ":     " + inttostring(clashhashmap[i][0]) + '      No roles specified yet.' +'\n')
-                listnumberhashmapsaturday[j] +=1
-            if clashhashmap[i][1]==j:
-                if i in roleshashmap:
-                    resultstring2 = resultstring2 + (i + ":     " + inttostring(clashhashmap[i][1]) + '      ' + str(roleshashmap[i][0]) + '\n')
-                else:
-                    resultstring2 = resultstring2 + (i + ":     " + inttostring(clashhashmap[i][1]) + '      No roles specified yet.' +'\n')
-                listnumberhashmapsunday[j] +=1
-    #send out the message
-    return ("Clash for " + datestringdict['datestring'] + ".\n" + "\n" + resultstring1 + saturdaynumberstring +  str(listnumberhashmapsaturday[3]) + " + ("+ str(listnumberhashmapsaturday[2]) + ")\n"+ resultstring2 + sundaynumberstring +  str(listnumberhashmapsunday[3]) + " + ("+ str(listnumberhashmapsunday[2]) + ")")
+    gamersOnSaturday = {
+        Response.Yes.value: [],
+        Response.Fill.value: [],
+        Response.Maybe.value: [],
+        Response.No.value: [],
+    }
+    gamersOnSunday = {
+        Response.Yes.value: [],
+        Response.Fill.value: [],
+        Response.Maybe.value: [],
+        Response.No.value: [],
+    }
+    longestGamer = 0
+    for gamer, available in clashhashmap.items():
+        if len(gamer) > longestGamer:
+            longestGamer = len(gamer)
+        gamersOnSaturday.get(available[0]).append(gamer)
+        gamersOnSunday.get(available[1]).append(gamer)
+
+    def add_to_string(response, gamer):
+        role = roleshashmap.get(gamer, "No role specified yet")
+        spacesRole = " " * (10 - len(Response(response).name))
+        spaceGamer = " " * (longestGamer - len(gamer) + 5)
+        return Response(response).name + ":" + spacesRole + gamer + spaceGamer + role + '\n'
+
+    for response, gamers in gamersOnSaturday.items():
+        for gamer in gamers:
+            resultstring1 += add_to_string(response, gamer)
+
+    for response, gamers in gamersOnSunday.items():
+        for gamer in gamers:
+            resultstring2 += add_to_string(response, gamer)
+
+
+    saturdaynumberstring = f"Saturday: {len(gamersOnSaturday[Response.Yes.value])} + ({len(gamersOnSaturday[Response.Fill.value])}) \n" 
+    sundaynumberstring = f"Sunday: {len(gamersOnSunday[Response.Yes.value])} + ({len(gamersOnSunday[Response.Fill.value])}) \n"
+    
+    return ("Clash for " + datestringdict['datestring'] + ".\n" + "\n" + resultstring1 + saturdaynumberstring + resultstring2 + sundaynumberstring)
 
 
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
-
-@client.tree.command(description="Register for the upcoming Clash tournament")
-async def register(inter: discord.Interaction, saturday: Response, sunday: Response):
-    clashhashmap[inter.user.name] = (int(saturday.value), int(sunday.value))
+def register_gamer(name, saturday, sunday):
+    clashhashmap[name] = (Response(saturday).value, Response(sunday).value)
     f = open("savedhashmap.txt", "w")
     f.write(str(clashhashmap))
     f.close()
-    await inter.response.send_message(f"{inter.user.mention} was succesfully registered!")
-    #await interaction.followup.send(f"{interaction.user.mention} ")
+    return f"{name} was succesfully registered!"
 
+@client.tree.command(description="Register for the upcoming Clash tournament")
+async def register(inter: discord.Interaction, saturday: Response, sunday: Response):
+    await inter.response.send_message(register_gamer(inter.user.display_name, saturday, sunday))
 
 @client.tree.command(description="View registered players")
 async def view(inter: discord.Interaction):
     await inter.response.send_message(build_view_message())
+
+class YesOrNo(str, enum.Enum):
+    Yes = 0
+    No = 1
+
+def set_roles(name, mid, top, jungle, adc, support, fill):
+    roles = []
+    if mid == YesOrNo.Yes:
+        roles.append("mid")
+    if top == YesOrNo.Yes:
+        roles.append("top")
+    if jungle == YesOrNo.Yes:
+        roles.append("jungle")
+    if adc == YesOrNo.Yes:
+        roles.append("adc")
+    if support == YesOrNo.Yes:
+        roles.append("support")
+    if fill == YesOrNo.Yes:
+        roles.append("fill")
+
+    with open("savedrolehashmap.txt", "w") as f:
+        rolesString = "/".join(roles)
+        roleshashmap[name] = rolesString
+        f.write(str(roleshashmap))
+        f.close()
+        return f"{name}'s roles were successfully set to {rolesString}!"
+    return "Failed to set roles!"
+
+@client.tree.command(description="Register your roles")
+async def role(inter: discord.Interaction, mid: YesOrNo, top: YesOrNo, jungle: YesOrNo, adc: YesOrNo, support: YesOrNo, fill: YesOrNo):
+    await inter.response.send_message(set_roles(inter.user.display_name, mid, top, jungle, adc, support, fill))
+
+def is_clash_mod(roles):
+    for role in roles:
+        if role.name == 'Clash Mod':
+            return True
+    return False
+
+@client.tree.command(description="Clears the clash list")
+async def clearclash(inter: discord.Interaction):
+
+    if not is_clash_mod(inter.user.roles):
+        await inter.response.send_message("you dont have the authorities for this command bitch")
+        return
+    
+    dt = datetime.now()
+    weekday = dt.isoweekday()
+    if weekday > 3:
+        sat = dt + timedelta(days= 6 - weekday)
+        sun = dt + timedelta(days= 7 - weekday)
+        datestringdict['datestring'] = f"{sat.day}th of {sat.strftime('%B')} and {sun.day}th of {sun.strftime('%B')}"
+        f = open("datestringdict.txt", "w")
+        f.write(str(datestringdict))
+        f.close()
+    for key in list(clashhashmap.keys()):
+        del clashhashmap[key]
+    f = open("savedhashmap.txt", "w")
+    f.write(str(clashhashmap))
+    f.close()
+    await inter.response.send_message("Successfully cleared the list.")
 
 
 async def register(message):
@@ -292,28 +367,6 @@ async def view(message):
     #send out the message
     await message.channel.send("Clash for " + datestringdict['datestring'] + ".\n" + resultstring1 + saturdaynumberstring +  str(listnumberhashmapsaturday[3]) + " + ("+ str(listnumberhashmapsaturday[2]) + ")\n"+ resultstring2 + sundaynumberstring +  str(listnumberhashmapsunday[3]) + " + ("+ str(listnumberhashmapsunday[2]) + ")")
 
-async def role(message):
-    #adds the role the player wants to play
-    messagecontainsroles = True
-    t = message.content
-    x = t.split()
-    x = x[1].split("/")
-    listofpossibleroles = ['mid', 'top', 'jungle', 'support', 'adc', 'fill']
-    rolesnamed = {}
-    for i in range(0, len(x)):
-        if x[i] not in listofpossibleroles or x[i] in rolesnamed:
-            messagecontainsroles = False
-        else:
-            rolesnamed[x[i]] = 1
-    if messagecontainsroles == True:
-        roleshashmap[message.author.name] = message.content.split()[1:]
-        f = open("savedrolehashmap.txt", "w")
-        f.write(str(roleshashmap))
-        f.close()
-        await message.channel.send(str(message.author.name) +  '´s roles were successfully registered.')
-
-    else:
-        await message.channel.send(str(message.author.name) + '´s roles were not successfully registered. Please specify your roles using mid, jungle, top, adc, support or fill only (no caps) see !commands.' )
 
 async def cya(message):
     if str(message.author.name) == 'åke' or str(message.author.name) == 'tvåke':
@@ -321,24 +374,6 @@ async def cya(message):
         quit()
     else:
         await message.channel.send("you dont have the authorities for this command bitch")
-
-async def clearclash(message):
-    if str(message.author.name) == 'åke' or str(message.author.name) == 'tvåke' or str(message.author.name) == 'Oliver':
-        dt = datetime.now()
-        weekday = dt.isoweekday()
-        if weekday > 3:
-            sat = dt + timedelta(days= 6 - weekday)
-            sun = dt + timedelta(days= 7 - weekday)
-            datestringdict['datestring'] = f"{sat.day}th of {sat.strftime('%B')} and {sun.day}th of {sun.strftime('%B')}"
-            f = open("datestringdict.txt", "w")
-            f.write(str(datestringdict))
-            f.close()
-        for key in list(clashhashmap.keys()):
-            del clashhashmap[key]
-        f = open("savedhashmap.txt", "w")
-        f.write(str(clashhashmap))
-        f.close()
-        await message.channel.send("Successfully cleared the list.")
 
 async def setdate(message):
     if str(message.author.name) == 'åke' or str(message.author.name) == 'tvåke' or str(message.author.name) == 'Oliver':
@@ -395,7 +430,6 @@ async def removec(message):
 async def on_message(message):
     global lecon
     id=client.get_guild(704740604340338759)
-
     #Non-clash stuff
     if False:
         if message.content.startswith('!hello'):
