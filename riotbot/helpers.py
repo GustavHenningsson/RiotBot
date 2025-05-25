@@ -5,29 +5,26 @@ import discord
 import ast
 
 
-f = open("savedhashmap.txt", "r")
-readfile = f.read()
-if readfile == "":
-    clashhashmap = {}
-else:
-    clashhashmap = ast.literal_eval(readfile)
-f.close()
+with open("savedhashmap.txt", "r") as file:
+    readfile = file.read()
+    if readfile == "":
+        clashhashmap = {}
+    else:
+        clashhashmap = ast.literal_eval(readfile)
 
-f = open("savedrolehashmap.txt", "r")
-readfile = f.read()
-if readfile == "":
-    roleshashmap = {}
-else:
-    roleshashmap = ast.literal_eval(readfile)
-f.close()
+with open("savedrolehashmap.txt", "r") as file:
+    readfile = file.read()
+    if readfile == "":
+        roleshashmap = {}
+    else:
+        roleshashmap = ast.literal_eval(readfile)
 
-f = open("datestringdict.txt", "r")
-readfile = f.read()
-if readfile == "":
-    datestringdict = {'datestring': "DATE NOT SET"}
-else:
-    datestringdict = ast.literal_eval(readfile)
-f.close()
+with open("datestringdict.txt", "r") as file:
+    readfile = file.read()
+    if readfile == "":
+        datestringdict = {'datestring': "DATE NOT SET"}
+    else:
+        datestringdict = ast.literal_eval(readfile)
 
 def get_clash(apikey):
     url= 'https://euw1.api.riotgames.com/lol/clash/v1/tournaments?api_key='+apikey
@@ -77,7 +74,6 @@ def build_view_message():
         for gamer in gamers:
             resultstring2 += add_to_string(response, gamer)
 
-
     saturdaynumberstring = f"Saturday: {len(gamersOnSaturday[Response.Yes.value])} + ({len(gamersOnSaturday[Response.Fill.value])}) \n" 
     sundaynumberstring = f"Sunday: {len(gamersOnSunday[Response.Yes.value])} + ({len(gamersOnSunday[Response.Fill.value])}) \n"
     
@@ -85,9 +81,8 @@ def build_view_message():
 
 def register_gamer(name, saturday, sunday):
     clashhashmap[name] = (Response(saturday).value, Response(sunday).value)
-    f = open("savedhashmap.txt", "w")
-    f.write(str(clashhashmap))
-    f.close()
+    with open("savedhashmap.txt", "w") as file:
+        file.write(str(clashhashmap))
     return f"{name} was succesfully registered!"
 
 class YesOrNo(str, enum.Enum):
@@ -109,11 +104,10 @@ def set_roles(name, top, jungle, mid, adc, support, fill):
     if fill == YesOrNo.Yes:
         roles.append("fill")
 
-    with open("savedrolehashmap.txt", "w") as f:
+    with open("savedrolehashmap.txt", "w") as file:
         rolesString = "/".join(roles)
         roleshashmap[name] = rolesString
-        f.write(str(roleshashmap))
-        f.close()
+        file.write(str(roleshashmap))
         return f"{name}'s roles were successfully set to {rolesString}!"
     return "Failed to set roles!"
 
@@ -133,9 +127,8 @@ async def setdate(message):
             datestring += x[i] + " "
         datestring[:-1]
         datestringdict['datestring'] = datestring
-        f = open("datestringdict.txt", "w")
-        f.write(str(datestringdict))
-        f.close()
+        with open("datestringdict.txt", "w") as file:
+            file.write(str(datestringdict))
         await message.channel.send("Successfully set the date.")
 
 async def removec(message):
@@ -146,26 +139,22 @@ async def removec(message):
         if x[1] in clashhashmap and x[1] in roleshashmap:
             del clashhashmap[x[1]]
             del roleshashmap[x[1]]
-            f = open("savedhashmap.txt", "w")
-            f.write(str(clashhashmap))
-            f.close()
-            f = open("savedrolehashmap.txt", "w")
-            f.write(str(roleshashmap))
-            f.close()
+            with open("savedhashmap.txt", "w") as file:
+                file.write(str(clashhashmap))
+            with open("savedrolehashmap.txt", "w") as file:
+                file.write(str(roleshashmap))
             await message.channel.send(x[1] + ' were successfully removed from clashhashmap and rolehashmap')
 
         elif x[1] in clashhashmap and x[1] not in roleshashmap:
             del clashhashmap[x[1]]
-            f = open("savedhashmap.txt", "w")
-            f.write(str(clashhashmap))
-            f.close()
+            with open("savedhashmap.txt", "w") as file:
+                file.write(str(clashhashmap))
             await message.channel.send(x[1] + ' were successfully removed from clashhashmap')
 
         elif x[1] in roleshashmap and x[1] not in clashhashmap:
             del roleshashmap[x[1]]
-            f = open("savedrolehashmap.txt", "w")
-            f.write(str(roleshashmap))
-            f.close()
+            with open("savedrolehashmap.txt", "w") as file:
+                file.write(str(roleshashmap))
             await message.channel.send(x[1] + ' were successfully removed from rolehashmap')
 
         else:
@@ -184,13 +173,11 @@ def clear_clash(inter: discord.Interaction):
         sat = dt + timedelta(days= 6 - weekday)
         sun = dt + timedelta(days= 7 - weekday)
         datestringdict['datestring'] = f"{sat.day}th of {sat.strftime('%B')} and {sun.day}th of {sun.strftime('%B')}"
-        f = open("datestringdict.txt", "w")
-        f.write(str(datestringdict))
-        f.close()
+        with open("datestringdict.txt", "w") as file:
+            file.write(str(datestringdict))
     for key in list(clashhashmap.keys()):
         del clashhashmap[key]
-    f = open("savedhashmap.txt", "w")
-    f.write(str(clashhashmap))
-    f.close()
+    with open("savedrolehashmap.txt", "w") as file:
+        file.write(str(roleshashmap))
 
     return "Successfully cleared the list."

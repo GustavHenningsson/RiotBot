@@ -36,8 +36,8 @@ async def view(inter: discord.Interaction):
     await inter.response.send_message(build_view_message())
 
 @client.tree.command(description="Register your roles")
-async def role(inter: discord.Interaction, mid: YesOrNo, top: YesOrNo, jungle: YesOrNo, adc: YesOrNo, support: YesOrNo, fill: YesOrNo):
-    await inter.response.send_message(set_roles(inter.user.display_name, mid, top, jungle, adc, support, fill))
+async def role(inter: discord.Interaction, top: YesOrNo, jungle: YesOrNo, mid: YesOrNo, adc: YesOrNo, support: YesOrNo, fill: YesOrNo):
+    await inter.response.send_message(set_roles(inter.user.display_name, top=top, jungle=jungle, mid=mid, adc=adc, support=support, fill=fill))
 
 @client.tree.command(description="Clears the clash list")
 async def clearclash(inter: discord.Interaction):
