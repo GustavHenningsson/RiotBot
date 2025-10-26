@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  riotbot:
+    build:
+      context: ./riotbot
+      dockerfile: Containerfile.clash
+    container_name: riotbot
+    restart: unless-stopped
+    env_file:
+      - ./riotbot/.env
+    volumes:
+      # Persist data files
+      - ./riotbot/datestringdict.txt:/usr/src/app/datestringdict.txt
+      - ./riotbot/savedhashmap.txt:/usr/src/app/savedhashmap.txt
+      - ./riotbot/savedrolehashmap.txt:/usr/src/app/savedrolehashmap.txt
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
