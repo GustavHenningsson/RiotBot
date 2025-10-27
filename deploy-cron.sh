@@ -4,73 +4,125 @@
 # This script pulls the latest changes from git and restarts the docker container
 # if there are any updates
 
-REPO_DIR="/home/pi/RiotBot"
+REPO_DIR="/home/dietpi/RiotBot"
 LOG_FILE="$REPO_DIR/deploy-cron.log"
+CONTAINER_NAME="riotbot"
+BRANCH="main"
 
-# Function to log messages with timestamp
+# ===== Utility Functions =====
+
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
 }
 
-log_message "=== Starting auto-deploy check ==="
-
-# Change to repository directory
-cd "$REPO_DIR" || {
-    log_message "ERROR: Could not change to directory $REPO_DIR"
+exit_with_error() {
+    log_message "ERROR: $1"
     exit 1
 }
 
-# Fetch latest changes
-log_message "Fetching latest changes..."
-git fetch origin main 2>&1 | tee -a "$LOG_FILE"
+run_command() {
+    local description="$1"
+    local command="$2"
 
-# Check if there are any updates
-LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse origin/main)
+    log_message "$description"
+    eval "$command 2>&1 | tee -a '$LOG_FILE'"
 
-if [ "$LOCAL" = "$REMOTE" ]; then
-    log_message "Already up to date. No deployment needed."
-    exit 0
-fi
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        exit_with_error "$description failed"
+    fi
+}
 
-log_message "Updates found. Pulling changes..."
-git pull origin main 2>&1 | tee -a "$LOG_FILE"
+# ===== Git Functions =====
 
-if [ $? -ne 0 ]; then
-    log_message "ERROR: Git pull failed"
-    exit 1
-fi
+fetch_latest_changes() {
+    run_command "Fetching latest changes..." "git fetch origin $BRANCH"
+}
 
-log_message "Stopping containers..."
-docker-compose down 2>&1 | tee -a "$LOG_FILE"
+check_for_updates() {
+    local local_commit=$(git rev-parse HEAD)
+    local remote_commit=$(git rev-parse origin/$BRANCH)
 
-log_message "Building containers..."
-docker-compose build --no-cache 2>&1 | tee -a "$LOG_FILE"
+    [ "$local_commit" != "$remote_commit" ]
+}
 
-if [ $? -ne 0 ]; then
-    log_message "ERROR: Docker build failed"
-    exit 1
-fi
+pull_changes() {
+    run_command "Pulling changes..." "git pull origin $BRANCH"
+}
 
-log_message "Starting containers..."
-docker-compose up -d 2>&1 | tee -a "$LOG_FILE"
+# ===== Container Functions =====
 
-if [ $? -ne 0 ]; then
-    log_message "ERROR: Docker compose up failed"
-    exit 1
-fi
+is_container_running() {
+    docker ps | grep -q "$CONTAINER_NAME"
+}
 
-# Wait a moment for container to start
-sleep 5
+stop_containers() {
+    run_command "Stopping containers..." "docker-compose down"
+}
 
-# Verify container is running
-if docker ps | grep -q riotbot; then
-    log_message "SUCCESS: Deployment completed. Container is running."
-    log_message "Recent logs:"
-    docker logs riotbot --tail 10 2>&1 | tee -a "$LOG_FILE"
-else
-    log_message "ERROR: Container is not running after deployment"
-    exit 1
-fi
+build_containers() {
+    run_command "Building containers (no cache)..." "docker-compose build --no-cache"
+}
 
-log_message "=== Auto-deploy completed ==="
+build_containers_with_cache() {
+    run_command "Building containers (with cache)..." "docker-compose build"
+}
+
+start_containers() {
+    run_command "Starting containers..." "docker-compose up -d"
+}
+
+verify_container_running() {
+    sleep 5
+
+    if is_container_running; then
+        log_message "SUCCESS: Container is running."
+        log_message "Recent logs:"
+        docker logs "$CONTAINER_NAME" --tail 10 2>&1 | tee -a "$LOG_FILE"
+    else
+        exit_with_error "Container is not running after deployment"
+    fi
+}
+
+# ===== Deployment Functions =====
+
+deploy_with_rebuild() {
+    pull_changes
+    stop_containers
+    build_containers
+    start_containers
+    verify_container_running
+}
+
+deploy_without_rebuild() {
+    build_containers_with_cache
+    start_containers
+    verify_container_running
+}
+
+# ===== Main Script =====
+
+main() {
+    log_message "=== Starting auto-deploy check ==="
+
+    cd "$REPO_DIR" || exit_with_error "Could not change to directory $REPO_DIR"
+
+    fetch_latest_changes
+
+    if check_for_updates; then
+        log_message "Updates found. Deploying with rebuild..."
+        deploy_with_rebuild
+    else
+        log_message "Already up to date. No new changes to pull."
+
+        if is_container_running; then
+            log_message "Container is already running. No action needed."
+        else
+            log_message "Container is not running. Starting it..."
+            deploy_without_rebuild
+        fi
+    fi
+
+    log_message "=== Auto-deploy completed ==="
+}
+
+main
