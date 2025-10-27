@@ -10,13 +10,13 @@ First, transfer the `deploy-cron.sh` script to your DietPi. You can do this by e
 
 **Option A: Copy from local to DietPi (if you have access)**
 ```bash
-scp deploy-cron.sh pi@your-dietpi-ip:/home/pi/RiotBot/
+scp deploy-cron.sh pi@your-dietpi-ip:/home/dietpi/RiotBot/
 ```
 
 **Option B: Pull from repository**
 If the script is already committed to your repo, just pull it on the DietPi:
 ```bash
-cd /home/pi/RiotBot
+cd /home/dietpi/RiotBot
 git pull
 ```
 
@@ -24,20 +24,20 @@ git pull
 
 SSH into your DietPi or access it directly, then run:
 ```bash
-chmod +x /home/pi/RiotBot/deploy-cron.sh
+chmod +x /home/dietpi/RiotBot/deploy-cron.sh
 ```
 
 ### 3. Test the script manually
 
 Before setting up the cron job, test the script to ensure it works:
 ```bash
-cd /home/pi/RiotBot
+cd /home/dietpi/RiotBot
 ./deploy-cron.sh
 ```
 
 Check the log file to see if it worked:
 ```bash
-cat /home/pi/RiotBot/deploy-cron.log
+cat /home/dietpi/RiotBot/deploy-cron.log
 ```
 
 ### 4. Set up the cron job
@@ -49,7 +49,7 @@ crontab -e
 
 Add the following line to run the script daily at 18:00 (6:00 PM):
 ```
-0 18 * * * /home/pi/RiotBot/deploy-cron.sh
+0 18 * * * /home/dietpi/RiotBot/deploy-cron.sh
 ```
 
 Save and exit the editor (in nano: Ctrl+X, then Y, then Enter).
@@ -68,14 +68,14 @@ You should see the line you just added.
 - **Schedule**: Runs every day at 18:00
 - **Check for updates**: The script fetches from `origin/main` and compares with local HEAD
 - **Only deploys if needed**: If no changes are detected, it exits early
-- **Logs everything**: All output is logged to `/home/pi/RiotBot/deploy-cron.log`
+- **Logs everything**: All output is logged to `/home/dietpi/RiotBot/deploy-cron.log`
 - **Full rebuild**: If updates are found, it rebuilds the container with `--no-cache`
 
 ## Monitoring
 
 To check the cron job logs:
 ```bash
-tail -f /home/pi/RiotBot/deploy-cron.log
+tail -f /home/dietpi/RiotBot/deploy-cron.log
 ```
 
 To check recent cron job executions:
@@ -91,7 +91,7 @@ grep CRON /var/log/syslog | tail -20
 - Check system logs: `grep CRON /var/log/syslog`
 
 ### Permission issues
-- Ensure the script is executable: `chmod +x /home/pi/RiotBot/deploy-cron.sh`
+- Ensure the script is executable: `chmod +x /home/dietpi/RiotBot/deploy-cron.sh`
 - Ensure the user running the cron has docker permissions: `groups $(whoami)` should show `docker`
 
 ### Docker permission errors
