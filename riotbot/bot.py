@@ -30,6 +30,7 @@ async def on_ready():
 @client.tree.command(description="Register for the upcoming Clash tournament")
 async def register(inter: discord.Interaction, saturday: Response, sunday: Response):
     await inter.response.send_message(register_gamer(inter.user.display_name, saturday, sunday))
+    await inter.response.send_message(build_view_message())
 
 @client.tree.command(description="View registered players")
 async def view(inter: discord.Interaction):
