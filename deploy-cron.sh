@@ -4,7 +4,7 @@
 # This script pulls the latest changes from git and restarts the docker container
 # if there are any updates
 
-REPO_DIR="/home/dietpi/RiotBot"
+REPO_DIR="/home/oliver/RiotBot"
 LOG_FILE="$REPO_DIR/deploy-cron.log"
 CONTAINER_NAME="riotbot"
 BRANCH="main"
